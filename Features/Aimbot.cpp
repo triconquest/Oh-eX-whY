@@ -115,45 +115,6 @@ void CAimbot::RunSilent(CUserCmd* cmd)
 	}
 }
 
-//IClientEntity* CAimbot::GetSilentTarget(IClientEntity* pLocal, Vector3 angles)
-//{
-//	IClientEntity* pBestTarget = nullptr;
-//	float fBestFov = FLT_MAX;
-//
-//	G::iAimTarget = -1;
-//
-//	for (int i = 1; i < 64; i++)
-//	{
-//		IClientEntity* pCurEntity = I::ClientEntityList->GetClientEntity(i);
-//
-//		if (!pCurEntity || pCurEntity->IsDormant())
-//			continue;
-//
-//		if (pCurEntity == pLocal || (pCurEntity->GetTeam() == pLocal->GetTeam()))
-//			continue;
-//
-//		int iEntHealth = pCurEntity->GetHealth();
-//		if (iEntHealth <= 1)
-//			continue;
-//
-//		Vector3 CurEntityPos = pCurEntity->GetAbsOrigin();
-//		Vector3 aimAngleToEntity = Math::CalcAngle(pLocal->GetAbsOrigin(), CurEntityPos);
-//
-//		Vector3 viewAngles;
-//		I::EngineClient->GetViewAngles(viewAngles);
-//		float fov = Math::GetFOV(viewAngles, aimAngleToEntity);
-//
-//		if (fov < fBestFov && fov <= G::fAimFOV)
-//		{
-//			fBestFov = fov;
-//			pBestTarget = pCurEntity;
-//			G::iAimTarget = i;
-//		}
-//	}
-//
-//	return pBestTarget;
-//}
-
 IClientEntity* CAimbot::GetTarget(IClientEntity* pLocal)
 {
 	IClientEntity* pBestTarget = nullptr;

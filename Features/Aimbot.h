@@ -38,7 +38,6 @@ class CAimbot
 public:
 	void Run();
 	void RunSilent(CUserCmd* cmd);
-	IClientEntity* GetSilentTarget(IClientEntity* pLocal, Vector3 angles);
 	IClientEntity* GetTarget(IClientEntity* pLocal);
 	void SetViewAngles(Vector3& angles);
 	void AutoShoot(IClientEntity* target, CUserCmd* cmd);

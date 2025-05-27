@@ -13,7 +13,7 @@ extern LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 namespace Menu
 {
 	static bool bShow = false;
-	static bool bColorText = false;
+	static bool bColorText = false; // deprecated, used in the old menu for rainbow colors
 	static int iCurrentTab = 0;
 
 	void Init(IDirect3DDevice9* pDevice, HWND hwnd);

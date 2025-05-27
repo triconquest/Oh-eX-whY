@@ -29,23 +29,6 @@ DWORD WINAPI Loop(LPVOID lParam)
 	return 0;
 }
 
-DWORD WINAPI Attach(LPVOID lParam)
-{
-	AllocConsole();
-	FILE* f;
-	freopen_s(&f, "CONOUT$", "w", stdout); // FIX CURSOR FUCKING UP
-	std::cout << "console attached" << std::endl;
-	MessageBox(0, "waiting for debug", "waiting..", MB_OK | MB_ICONINFORMATION);
-
-	while (!GetAsyncKeyState(VK_HOME))
-		Sleep(100);
-
-	std::cout << "unloading..." << std::endl;
-	FreeConsole();
-	FreeLibraryAndExitThread((HMODULE)lParam, 0);
-	return 0;
-}
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReseved)
 {
 	switch (ul_reason_for_call) {

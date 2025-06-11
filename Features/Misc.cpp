@@ -130,11 +130,74 @@ void CMisc::Bhop(CUserCmd* cmd)
 
 	auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
 
-	if (!pLocal)
+	if (!pLocal || pLocal->GetHealth() <= 1)
 		return;
 
-	if (!(pLocal->GetFlags() & 1))
-		cmd->buttons &= ~IN_JUMP;
+	if (!(cmd->buttons & IN_JUMP))
+		return;
+
+	static int spam_jumps_left = 0;
+	static int spam_cooldown_ticks = 0;
+	static int delay_ticks = 0;
+	static int landed_tick = 0;
+
+	bool onGround = (pLocal->GetFlags() & FL_ONGROUND);
+	int current_tick = I::Global->tickcount;
+
+	if (onGround)
+	{
+		bool delay_jump = MiscUtils.RandomFloat(0.f, 1.f) < 0.2f;
+
+		if (delay_jump)
+		{
+			delay_ticks = MiscUtils.RandomInt(1, 2); // delay 1-2 ticks
+			landed_tick = current_tick;
+			cmd->buttons &= ~IN_JUMP;
+			return;
+		}
+		else
+		{
+			delay_ticks = 0;
+		}
+	}
+
+	if (delay_ticks > 0)
+	{
+		if ((current_tick - landed_tick) < delay_ticks)
+		{
+			cmd->buttons &= ~IN_JUMP;
+			return;
+		}
+	}
+
+	if (onGround)
+	{
+		cmd->buttons |= IN_JUMP;
+
+		spam_jumps_left = MiscUtils.RandomInt(12, 16); // random spam jump, avoids detection
+		spam_cooldown_ticks = 0;
+	}
+	else
+	{
+		if (spam_jumps_left > 0)
+		{
+			if (spam_cooldown_ticks == 0)
+			{
+				cmd->buttons |= IN_JUMP;
+				spam_jumps_left--;
+				spam_cooldown_ticks = MiscUtils.RandomInt(0, 1);
+			}
+			else
+			{
+				cmd->buttons &= ~IN_JUMP;
+				spam_cooldown_ticks--;
+			}
+		}
+		else
+		{
+			cmd->buttons &= ~IN_JUMP;
+		}
+	}
 }
 
 void CMisc::DrawBullets()

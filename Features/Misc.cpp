@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+#include <random>
+
 #pragma warning(disable:4996)
 
 struct Ray_t;
@@ -33,6 +35,14 @@ void CMisc::Run()
 void CMisc::DrawCrosshair()
 {
 	if (!G::bCrosshair || I::EngineVGui->IsGameUIVisible() || !I::EngineClient->IsInGame())
+		return;
+
+	auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
+
+	if (!pLocal || pLocal->GetHealth() <= 1)
+		return;
+
+	if (!MiscUtils.LocalHoldingSniper() || MiscUtils.Scoped(pLocal))
 		return;
 
 	float centerX = I::iScreenWidth / 2.0f;
@@ -125,32 +135,62 @@ void CMisc::HitMarker()
 
 void CMisc::Bhop(CUserCmd* cmd)
 {
-	if (!G::bBhop || !cmd)
+	if (!G::bBhop || !I::EngineClient->IsInGame() || !cmd)
 		return;
 
 	auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
 
-	if (!pLocal || pLocal->GetHealth() <= 1)
+	if (!pLocal)
+		return;
+
+	auto pLocalBase = reinterpret_cast<C_BasePlayer*>(pLocal);
+
+	if (!pLocalBase || pLocalBase->deadflag())
 		return;
 
 	if (!(cmd->buttons & IN_JUMP))
 		return;
 
+	//printf("vel: %.2f\n", pLocalBase->m_vecVelocity().Length2());
+
 	static int spam_jumps_left = 0;
 	static int spam_cooldown_ticks = 0;
 	static int delay_ticks = 0;
 	static int landed_tick = 0;
+	static int bhop_streak = 0;
+
+	const float velocity = pLocalBase->m_vecVelocity().Length2();
+
+	static Vector lastViewAngles = cmd->viewangles;
 
 	bool onGround = (pLocal->GetFlags() & FL_ONGROUND);
 	int current_tick = I::Global->tickcount;
 
+	if (velocity > 590.f)
+	{
+		// dont inject bad jumps mid air because it looks like we're using hyperscroll
+		//if (!onGround && MiscUtils.RandomFloat(0.f, 1.f) < 0.4f)
+		//{
+		//	// inject a bad jump
+		//	cmd->buttons |= IN_JUMP;
+		//	return;
+		//}
+
+		if (onGround && MiscUtils.RandomFloat(0.f, 1.f) < 0.4f)
+		{
+			// skip the jump, velocity is too high
+			cmd->buttons &= ~IN_JUMP;
+			return;
+		}
+	}
+
 	if (onGround)
 	{
-		bool delay_jump = MiscUtils.RandomFloat(0.f, 1.f) < 0.2f;
+		bool delay_jump = MiscUtils.RandomFloat(0.f, 1.f) < 0.4f;
 
 		if (delay_jump)
 		{
-			delay_ticks = MiscUtils.RandomInt(1, 2); // delay 1-2 ticks
+			delay_ticks = MiscUtils.RandomInt(G::iBhopTickDelayMin, G::iBhopTickDelayMax); // delay 3–4 ticks to avoid hitting perf
 			landed_tick = current_tick;
 			cmd->buttons &= ~IN_JUMP;
 			return;
@@ -172,9 +212,16 @@ void CMisc::Bhop(CUserCmd* cmd)
 
 	if (onGround)
 	{
-		cmd->buttons |= IN_JUMP;
+		if (bhop_streak >= 8)
+		{
+			bhop_streak = 0; // clear the streak for a new one
+			return;
+		}
 
-		spam_jumps_left = MiscUtils.RandomInt(12, 16); // random spam jump, avoids detection
+		cmd->buttons |= IN_JUMP;
+		bhop_streak++;
+
+		spam_jumps_left = MiscUtils.RandomInt(G::iBhopSpamJumpsMin, G::iBhopSpamJumpsMax); // inputs should not be too random
 		spam_cooldown_ticks = 0;
 	}
 	else
@@ -257,7 +304,7 @@ void CMisc::CustomFOV(CViewSetup* view)
 
 	if (!pLocal)
 		return;
-	
+
 	// change back to 90 if we're scoped so we can use the game's scope fov
 	if (view->fov > 90 && MiscUtils.Scoped(pLocal))
 		view->fov = 90.f;
@@ -404,7 +451,7 @@ void CMisc::KnifeBot(CUserCmd* cmd)
 
 	const char* netWeapon = MiscUtils.GetNetworkedWeapon(pLocal);
 
-	if (!strstr(netWeapon, "CKnife"))
+	if (!netWeapon || !strstr(netWeapon, "CKnife"))
 		return;
 
 	for (int i = 1; i < 64; i++)
@@ -483,37 +530,3 @@ void CMisc::FindAttacker()
 		offsetY += 20;
 	}
 }
-
-// fuckass function crashes randomly needs 200 checks to work
-//void CMisc::FlagRebels()
-//{
-//	if (!I::EngineClient->IsInGame() || I::EngineVGui->IsGameUIVisible())
-//		return;
-//
-//	auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
-//
-//	if (!pLocal)
-//		return;
-//
-//	for (int i = 1; i < 64; i++)
-//	{
-//		IClientEntity* pEnemyEntity = I::ClientEntityList->GetClientEntity(i);
-//
-//		if (!pEnemyEntity)
-//			continue;
-//
-//		if (pEnemyEntity->GetTeam() == pLocal->GetTeam())
-//			continue;
-//
-//		C_BasePlayer* pEnemyBase = reinterpret_cast<C_BasePlayer*>(pEnemyEntity);
-//
-//		if (!pEnemyBase)
-//			continue;
-//
-//		if (pEnemyBase->deadflag())
-//			continue;
-//
-//		if (!MiscUtils.HoldingMelee(pEnemyEntity))
-//			G::bRebelling = true;
-//	}
-//}

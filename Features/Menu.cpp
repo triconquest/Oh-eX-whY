@@ -15,13 +15,13 @@ WNDPROC originalWndProc = nullptr;
 
 LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
-	if (Menu::bShow)
+	if (Menu::bShow && ImGui::GetCurrentContext())
 	{
-		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-
-		I::NInputSystem->ResetInputState();
-
-		return true;
+        if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+        {
+            I::NInputSystem->ResetInputState();
+            return true;
+        }
 	}
 
 	return CallWindowProc(originalWndProc, hWnd, uMsg, wParam, lParam);
@@ -190,10 +190,6 @@ void RenderNew()
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
             ImGui::SetCursorPosX(20);
             ImGui::TextColored(ImVec4(0.18f, 0.60f, 0.96f, 1.0f), "Oh eX whY");
-
-            /*ImGui::SameLine();
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
-            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "$");*/
 
             float width = ImGui::CalcTextSize("v2.7 | by triconquest").x;
             ImGui::SameLine(ImGui::GetWindowWidth() - width - 20);
@@ -442,7 +438,7 @@ void RenderVisualsTab()
         ImGui::TextColored(ImVec4(0.18f, 0.60f, 0.96f, 1.0f), "ESP Settings");
         ImGui::Separator();
         ImGui::Checkbox("Enable ESP", &G::bESP);
-        //ImGui::Checkbox("Always On", &G::bESPAlwaysOn);
+        ImGui::Checkbox("Always On", &G::bESPAlwaysOn);
         ImGui::Checkbox("Use Bones", &G::bUseBones);
         ImGui::Checkbox("Show Team", &G::bShowTeam);
         ImGui::Checkbox("Skeleton", &G::bBoneESP);
@@ -501,6 +497,22 @@ void RenderMiscTab()
         ImGui::TextColored(ImVec4(0.18f, 0.60f, 0.96f, 1.0f), "Movement");
         ImGui::Separator();
         ImGui::Checkbox("Bunny Hop", &G::bBhop);
+        if (G::bBhop)
+        {
+            ImGui::Spacing();
+            ImGui::SeparatorText("Advanced bhop settings");
+            ImGui::SliderInt("Min Hops", &G::iBhopSpamJumpsMin, 10, 20);
+            ImGui::SliderInt("Max Hops", &G::iBhopSpamJumpsMax, 10, 20);
+
+            ImGui::Separator();
+            ImGui::Text("Tick delay, avoid hitting perfs");
+            ImGui::SliderInt("Min Delay", &G::iBhopTickDelayMin, 1, 5);
+            ImGui::SliderInt("Max Delay", &G::iBhopTickDelayMax, 1, 5);
+            if (G::iBhopSpamJumpsMin > G::iBhopSpamJumpsMax || G::iBhopTickDelayMin > G::iBhopTickDelayMax)
+                ImGui::TextColored(ImVec4(255.f, 0.f, 0.f, 255.f), "Warning: Min > Max, game will crash");
+            else
+                ImGui::Text("Choosing random (%d, %d)", G::iBhopTickDelayMin, G::iBhopTickDelayMax);
+        }
         ImGui::Checkbox("Fast Stop", &G::bFastStop);
         //ImGui::Checkbox("Chat Messages", &G::bPrintDamage);
 
